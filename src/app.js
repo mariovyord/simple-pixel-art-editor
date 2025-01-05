@@ -5,6 +5,7 @@ import { setupTools } from "./tools.js";
 import { setupEventListeners } from "./events.js";
 
 // Main app initialization
+
 /* type {HTMLCanvasElement} */
 const canvas = document.getElementById("canvas");
 /* type {CanvasRenderingContext2D} */

@@ -17,7 +17,7 @@ export function setupEventListeners(canvas, grid) {
     );
 
     if (grid.toolState === "bucket") {
-      const targetColor = grid.grid[cellX][cellY];
+      const targetColor = grid.grid[cellX][cellY].color;
       if (targetColor !== grid.currentColor) {
         grid.floodFill(cellX, cellY, targetColor, grid.currentColor);
       }
