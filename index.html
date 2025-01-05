@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Simple Pixel Art Editor</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="top-bar">
+      <h1 class="app-title">Simple Pixel Art Editor</h1>
+    </div>
+    <div class="editor">
+      <div class="controls">
+        <input type="color" id="colorPicker" value="#000000" />
+        <button id="clearButton">Clear</button>
+        <button id="penTool">Pen Tool</button>
+        <button id="bucketButton">Bucket Tool</button>
+        <input
+          type="file"
+          id="fileInput"
+          accept=".pxart"
+          style="display: none"
+        />
+      </div>
+      <canvas id="canvas" class="canvas"></canvas>
+    </div>
+    <script>
+      "use strict";
+      const canvas = document.getElementById("canvas");
+      const ctx = canvas.getContext("2d");
+
+      // Canvas and grid setup
+      const gridSize = 16; // Grid size (16x16)
+      const cellSize = 30; // Size of each cell in pixels
+      canvas.width = gridSize * cellSize;
+      canvas.height = gridSize * cellSize;
+
+      // State
+      let currentColor = "#000000";
+      let isDrawing = false;
+      let toolState = "pen"; // Current tool: 'pen' or 'bucket'
+      const grid = Array.from({ length: gridSize }, () =>
+        Array.from({ length: gridSize }, () => "#ffffff")
+      ); // Store colors for each cell
+
+      // Draw the grid
+      function drawGrid() {
+        ctx.save();
+        for (let x = 0; x < gridSize; x++) {
+          for (let y = 0; y < gridSize; y++) {
+            ctx.fillStyle = grid[x][y];
+            ctx.fillRect(x * cellSize, y * cellSize, cellSize, cellSize);
+            ctx.strokeStyle = "lightgray";
+            ctx.strokeRect(x * cellSize, y * cellSize, cellSize, cellSize);
+          }
+        }
+        ctx.restore();
+      }
+
+      // Get cell coordinates
+      function getCellCoords(x, y) {
+        return {
+          cellX: Math.floor(x / cellSize),
+          cellY: Math.floor(y / cellSize),
+        };
+      }
+
+      // Fill a cell
+      function fillCell(cellX, cellY, color) {
+        ctx.save();
+        grid[cellX][cellY] = color;
+        ctx.fillStyle = color;
+        ctx.fillRect(cellX * cellSize, cellY * cellSize, cellSize, cellSize);
+        ctx.strokeStyle = "lightgray";
+        ctx.strokeRect(cellX * cellSize, cellY * cellSize, cellSize, cellSize);
+        ctx.restore();
+      }
+
+      // Flood fill algorithm for bucket tool
+      function floodFill(x, y, targetColor, fillColor) {
+        if (x < 0 || y < 0 || x >= gridSize || y >= gridSize) return; // Out of bounds
+        if (grid[x][y] !== targetColor || grid[x][y] === fillColor) return; // Different color or already filled
+
+        // Fill the current cell
+        grid[x][y] = fillColor;
+        fillCell(x, y, fillColor);
+
+        // Recursively fill adjacent cells
+        floodFill(x + 1, y, targetColor, fillColor);
+        floodFill(x - 1, y, targetColor, fillColor);
+        floodFill(x, y + 1, targetColor, fillColor);
+        floodFill(x, y - 1, targetColor, fillColor);
+      }
+
+      // Event Listeners
+      canvas.addEventListener("mousedown", (event) => {
+        const rect = canvas.getBoundingClientRect();
+        const { cellX, cellY } = getCellCoords(
+          event.clientX - rect.left,
+          event.clientY - rect.top
+        );
+
+        if (toolState === "bucket") {
+          const targetColor = grid[cellX][cellY];
+          if (targetColor !== currentColor) {
+            floodFill(cellX, cellY, targetColor, currentColor);
+          }
+        } else if (toolState === "pen") {
+          isDrawing = true;
+          fillCell(cellX, cellY, currentColor);
+        }
+
+        drawGrid();
+      });
+
+      canvas.addEventListener("mousemove", (event) => {
+        if (!isDrawing || toolState !== "pen") return;
+        const rect = canvas.getBoundingClientRect();
+        const { cellX, cellY } = getCellCoords(
+          event.clientX - rect.left,
+          event.clientY - rect.top
+        );
+        fillCell(cellX, cellY, currentColor);
+      });
+
+      canvas.addEventListener("mouseup", () => {
+        isDrawing = false;
+      });
+
+      canvas.addEventListener("mouseleave", () => {
+        isDrawing = false;
+      });
+
+      // Color Picker
+      document
+        .getElementById("colorPicker")
+        .addEventListener("input", (event) => {
+          currentColor = event.target.value;
+        });
+
+      // Clear Button
+      document.getElementById("clearButton").addEventListener("click", () => {
+        for (let x = 0; x < gridSize; x++) {
+          for (let y = 0; y < gridSize; y++) {
+            grid[x][y] = "#ffffff";
+          }
+        }
+        drawGrid();
+      });
+
+      // Pen Tool Toggle
+      document.getElementById("penTool").addEventListener("click", () => {
+        // Change background color of the button and toggle the tool state
+        if (toolState !== "pen") {
+          toolState = "pen";
+          document.getElementById("penTool").style.backgroundColor =
+            "lightgreen";
+          document.getElementById("bucketButton").style.backgroundColor = "";
+        }
+      });
+
+      // Bucket Tool Toggle
+      document.getElementById("bucketButton").addEventListener("click", () => {
+        // Change background color of the button and toggle the tool state
+        if (toolState !== "bucket") {
+          toolState = "bucket";
+          document.getElementById("bucketButton").style.backgroundColor =
+            "lightgreen";
+          document.getElementById("penTool").style.backgroundColor = "";
+        }
+      });
+
+      // Initial setup
+      drawGrid();
+    </script>
+  </body>
+</html>
